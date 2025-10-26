@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List Manager</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Overlay untuk mobile -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <!-- Tombol Toggle Sidebar -->
+            <button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebarToggle">
+                <span id="toggleIcon">◀</span>
+            </button>
+
+            <div class="sidebar-header">
+                <h2> My Workspaces</h2>
+            </div>
+            <div class="sidebar-content">
+                <ul class="workspace-list" id="workspaceList"></ul>
+                <button class="add-workspace-btn" onclick="addWorkspace()">+ New Workspace</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-left">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="searchInput" placeholder="Search tasks..." oninput="filterTasks()">
+                    </div>
+                    <div class="filter-group">
+                        <select class="filter-select" id="filterStatus" onchange="filterTasks()">
+                            <option value="">All Status</option>
+                            <option value="To-Do">To-Do</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Stuck">Stuck</option>
+                            <option value="Complete">Complete</option>
+                        </select>
+                        <select class="filter-select" id="filterOwner" onchange="filterTasks()">
+                            <option value="">All Owners</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Header Right: Clock + User Profile -->
+                <div class="header-right">
+                    <!-- Realtime Clock (Standalone) -->
+                    <div class="clock-container">
+                        <div>
+                            <div class="clock-time" id="currentTime">00:00:00</div>
+                            <div class="clock-date" id="currentDate">Loading...</div>
+                        </div>
+                    </div>
+                    
+                    <!-- User Profile -->
+                    <div class="user-profile">
+                        <div class="user-avatar" id="userAvatar">U</div>
+                        <div class="user-info">
+                            <span class="user-name" id="userName">User</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard -->
+            <div class="dashboard" id="dashboard">
+                <div class="workspace-title">
+                    <span id="currentWorkspaceName">Select a workspace</span>
+                    <button class="add-task-btn" onclick="openTaskModal()">+ New Task</button>
+                </div>
+
+                <!-- Active Tasks Section -->
+                <div class="section">
+                    <div class="section-header">
+                        <h3 class="section-title">🎯 Active Tasks</h3>
+                        <span class="task-count" id="activeCount">0</span>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="task-table">
+                            <thead class="table-header">
+                                <tr>
+                                    <th>Task</th>
+                                    <th>Owner</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                    <th>Due Date</th>
+                                    <th>Notes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activeTasksBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Completed Tasks Section -->
+                <div class="section">
+                    <div class="section-header">
+                        <h3 class="section-title">✅ Completed Tasks</h3>
+                        <span class="task-count" id="completedCount">0</span>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="task-table">
+                            <thead>
+                                <tr>
+                                    <th>Task</th>
+                                    <th>Owner</th>
+                                    <th>Priority</th>
+                                    <th>Due Date</th>
+                                    <th>Notes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="completedTasksBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Add New Task</h3>
+                <button class="close-modal" onclick="closeTaskModal()">&times;</button>
+            </div>
+            <form id="taskForm">
+                <div class="form-group">
+                    <label class="form-label">Task Name</label>
+                    <input type="text" class="form-input" id="taskName" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Owner</label>
+                        <input type="text" class="form-input" id="taskOwner" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" id="taskStatus" required>
+                            <option value="To-Do">To-Do</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Stuck">Stuck</option>
+                            <option value="Complete">Complete</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Priority</label>
+                        <select class="form-select" id="taskPriority" required>
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Due Date</label>
+                        <input type="date" class="form-input" id="taskDueDate" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-textarea" id="taskNotes"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeTaskModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
