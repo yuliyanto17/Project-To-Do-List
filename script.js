@@ -1,305 +1,193 @@
+       let workspaces = [];
+        let currentWorkspaceId = null;
+        let editingTaskId = null;
+        let sidebarVisible = true;
+        let clockInterval = null;
+        let dueDateCheckInterval = null;
+        let confirmCallback = null;
+        let deleteItemId = null;
 
-        /* ============================================
-           JAVASCRIPT - PENJELASAN DETAIL
-           ============================================ */
-
-        // VARIABEL GLOBAL
-        // let = variabel yang bisa diubah nilainya
-        // const = variabel yang tidak bisa diubah (constant)
-        
-        let workspaces = []; // Array untuk menyimpan semua workspace
-        let currentWorkspaceId = null; // ID workspace yang sedang aktif
-        let editingTaskId = null; // ID task yang sedang diedit
-        let sidebarVisible = true; // Status sidebar (visible/hidden)
-        let clockInterval = null; // Variable untuk menyimpan interval ID clock
-
-        /* ============================================
-           FUNGSI INITIALIZE
-           ============================================ */
-        
-        // Fungsi yang dipanggil pertama kali saat halaman load
         function init() {
-            loadFromLocalStorage(); // Load data dari localStorage
-            renderWorkspaces(); // Tampilkan daftar workspace
+            loadFromLocalStorage();
+            renderWorkspaces();
             
-            // Jika ada workspace, pilih yang pertama
             if (workspaces.length > 0) {
                 selectWorkspace(workspaces[0].id);
             }
             
-            updateOwnerFilter(); // Update dropdown filter owner
-            checkMobile(); // Cek apakah di mobile
-            startClock(); // Mulai realtime clock
+            updateOwnerFilter();
+            checkMobile();
+            startClock();
+            startDueDateChecker();
         }
 
-        /* ============================================
-           REALTIME CLOCK FUNCTIONS
-           ============================================ */
-        
-        /**
-         * Fungsi untuk memulai realtime clock
-         * Menggunakan setInterval untuk update setiap detik
-         */
-        function startClock() {
-            // Update waktu pertama kali
-            updateClock();
-            
-            // setInterval() = menjalankan fungsi secara berulang
-            // Parameter 1: fungsi yang akan dijalankan
-            // Parameter 2: interval dalam milliseconds (1000ms = 1 detik)
-            // Return: interval ID yang bisa digunakan untuk stop interval
-            clockInterval = setInterval(updateClock, 1000);
-        }
-
-        /**
-         * Fungsi untuk update tampilan waktu dan tanggal
-         * Dipanggil setiap detik oleh setInterval
-         */
-        function updateClock() {
-            // Date object = object bawaan JavaScript untuk tanggal & waktu
-            // new Date() = membuat instance dengan waktu sekarang
-            const now = new Date();
-            
-            /* ============================================
-               UPDATE WAKTU (TIME)
-               ============================================ */
-            
-            // Extract komponen waktu dari Date object
-            let hours = now.getHours();     // 0-23 (24 hour format)
-            let minutes = now.getMinutes(); // 0-59
-            let seconds = now.getSeconds(); // 0-59
-            
-            // Konversi ke 12-hour format dengan AM/PM
-            const ampm = hours >= 12 ? 'PM' : 'AM';
-            hours = hours % 12;           // % = modulo operator (sisa bagi)
-            hours = hours || 12;          // Jika 0, ganti jadi 12
-            
-            // Atau jika ingin 24-hour format, komen 3 baris di atas
-            // dan uncomment baris berikut:
-            // const ampm = '';
-            
-            // padStart() = menambahkan karakter di awal string
-            // Kenapa? Agar selalu 2 digit: 9 menjadi 09
-            // Format: string.padStart(targetLength, padString)
-            hours = hours.toString().padStart(2, '0');
-            minutes = minutes.toString().padStart(2, '0');
-            seconds = seconds.toString().padStart(2, '0');
-            
-            // Template literal untuk format waktu
-            // Format: HH:MM:SS AM/PM
-            const timeString = `${hours}:${minutes}:${seconds} ${ampm}`;
-            
-            /* ============================================
-               UPDATE TANGGAL (DATE)
-               ============================================ */
-            
-            // Array nama hari dalam bahasa Indonesia
-            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-            
-            // Array nama bulan dalam bahasa Indonesia
-            const months = [
-                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-            ];
-            
-            // Extract komponen tanggal
-            const dayName = days[now.getDay()];        // Nama hari (0-6)
-            const day = now.getDate();                 // Tanggal (1-31)
-            const monthName = months[now.getMonth()];  // Nama bulan (0-11)
-            const year = now.getFullYear();            // Tahun (2024)
-            
-            // Format tanggal: "Senin, 13 Januari 2025"
-            const dateString = `${dayName}, ${day} ${monthName} ${year}`;
-            
-            /* ============================================
-               UPDATE DOM ELEMENTS
-               ============================================ */
-            
-            // Update waktu
-            const timeElement = document.getElementById('currentTime');
-            if (timeElement) {
-                timeElement.textContent = timeString;
-            }
-            
-            // Update tanggal
-            const dateElement = document.getElementById('currentDate');
-            if (dateElement) {
-                dateElement.textContent = dateString;
-            }
-        }
-
-        /**
-         * Fungsi untuk stop clock (cleanup)
-         * Penting untuk mencegah memory leak
-         */
-        function stopClock() {
-            // clearInterval() = stop interval yang running
-            // Menerima interval ID dari setInterval
-            if (clockInterval) {
-                clearInterval(clockInterval);
-                clockInterval = null;
-            }
-        }
-
-        /**
-         * Alternative: Fungsi untuk format waktu dengan opsi berbeda
-         * Uncomment jika ingin gunakan format ini
-         */
-        function updateClockAlternative() {
-            const now = new Date();
-            
-            // Opsi 1: Format lengkap dengan hari dan tanggal
-            const options = {
-                weekday: 'short', // Sen, Sel, Rab, dst
-                year: 'numeric',  // 2024
-                month: 'short',   // Jan, Feb, Mar, dst
-                day: 'numeric',   // 1, 2, 3, dst
-                hour: '2-digit',  // 00-23
-                minute: '2-digit',// 00-59
-                second: '2-digit' // 00-59
-            };
-            
-            const timeString = now.toLocaleTimeString('id-ID', options);
-            
-            // Opsi 2: Format singkat hanya waktu
-            // const timeString = now.toLocaleTimeString('id-ID');
-            
-            // Opsi 3: Custom format dengan Intl.DateTimeFormat
-            // const formatter = new Intl.DateTimeFormat('id-ID', {
-            //     hour: '2-digit',
-            //     minute: '2-digit',
-            //     second: '2-digit',
-            //     hour12: false // true untuk 12-hour, false untuk 24-hour
-            // });
-            // const timeString = formatter.format(now);
-            
-            document.getElementById('currentTime').textContent = timeString;
-        }
-
-        /* ============================================
-           LOCAL STORAGE FUNCTIONS
-           Kenapa Local Storage? Untuk menyimpan data
-           di browser agar tidak hilang saat refresh
-           ============================================ */
-        
-        // Menyimpan data ke localStorage
         function saveToLocalStorage() {
-            // JSON.stringify = convert object/array ke string
-            // Kenapa? Karena localStorage hanya bisa simpan string
             localStorage.setItem('todoWorkspaces', JSON.stringify(workspaces));
         }
 
-        // Mengambil data dari localStorage
         function loadFromLocalStorage() {
             const stored = localStorage.getItem('todoWorkspaces');
-            
-            // Jika ada data tersimpan
             if (stored) {
-                // JSON.parse = convert string kembali ke object/array
                 workspaces = JSON.parse(stored);
             }
         }
 
-        /* ============================================
-           SIDEBAR TOGGLE FUNCTION
-           ============================================ */
-        
+        function showConfirmModal(options) {
+            const modal = document.getElementById('confirmModal');
+            const title = document.getElementById('confirmTitle');
+            const message = document.getElementById('confirmMessage');
+            const itemName = document.getElementById('confirmItemName');
+            const warning = document.getElementById('confirmWarning');
+            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            
+            title.textContent = options.title || 'Confirm Delete';
+            message.textContent = options.message || 'Are you sure you want to delete this item?';
+            itemName.textContent = options.itemName || '';
+            warning.textContent = options.warning || 'This action cannot be undone.';
+            
+            confirmCallback = options.onConfirm;
+            
+            const newBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+            
+            document.getElementById('confirmDeleteBtn').onclick = function() {
+                if (confirmCallback) {
+                    confirmCallback();
+                }
+                closeConfirmModal();
+            };
+            
+            modal.classList.add('active');
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirmModal');
+            modal.classList.remove('active');
+            confirmCallback = null;
+            deleteItemId = null;
+        }
+
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');
             const toggleIcon = document.getElementById('toggleIcon');
             
-            // Toggle class 'hidden' - tambah jika tidak ada, hapus jika ada
             sidebar.classList.toggle('hidden');
-            sidebarVisible = !sidebarVisible; // Balik nilai boolean
+            sidebarVisible = !sidebarVisible;
             
-            // Ubah icon panah
             toggleIcon.textContent = sidebarVisible ? '◀' : '▶';
             
-            // Tampilkan overlay di mobile saat sidebar terbuka
             if (window.innerWidth <= 480) {
                 overlay.classList.toggle('active');
             }
         }
 
-        // Cek ukuran layar saat pertama load
         function checkMobile() {
-            // window.innerWidth = lebar window browser
             if (window.innerWidth <= 480) {
-                // Auto hide sidebar di mobile saat pertama load
                 document.getElementById('sidebar').classList.add('hidden');
                 sidebarVisible = false;
                 document.getElementById('toggleIcon').textContent = '▶';
             }
         }
 
-        // Event listener untuk window resize
-        // Dipanggil setiap kali ukuran window berubah
         window.addEventListener('resize', function() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');
             
             if (window.innerWidth > 480) {
-                // Hapus overlay di desktop
                 overlay.classList.remove('active');
             } else if (!sidebar.classList.contains('hidden')) {
-                // Tampilkan overlay jika sidebar terbuka di mobile
                 overlay.classList.add('active');
             }
         });
 
-        /* ============================================
-           WORKSPACE FUNCTIONS
-           ============================================ */
-        
-        function addWorkspace() {
-            // prompt() = menampilkan dialog input untuk user
-            const name = prompt('Enter workspace name:');
+        function openWorkspaceModal() {
+            const modal = document.getElementById('workspaceModal');
+            const form = document.getElementById('workspaceForm');
             
-            // Validasi: pastikan name tidak kosong
-            // trim() = menghapus spasi di awal dan akhir string
-            if (name && name.trim()) {
-                const workspace = {
-                    id: Date.now(), // Gunakan timestamp sebagai unique ID
-                    name: name.trim(),
-                    tasks: [] // Array kosong untuk tasks
-                };
-                
-                // push() = menambahkan element ke akhir array
-                workspaces.push(workspace);
-                
-                saveToLocalStorage();
-                renderWorkspaces();
-                selectWorkspace(workspace.id);
-            }
+            form.reset();
+            modal.classList.add('active');
+            
+            setTimeout(() => {
+                document.getElementById('workspaceName').focus();
+            }, 100);
         }
 
+        function closeWorkspaceModal() {
+            const modal = document.getElementById('workspaceModal');
+            modal.classList.remove('active');
+            document.getElementById('workspaceForm').reset();
+        }
+
+        document.getElementById('workspaceForm').onsubmit = function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('workspaceName').value;
+            const description = document.getElementById('workspaceDescription').value;
+            
+            if (!name || !name.trim()) {
+                alert('Workspace name is required!');
+                return;
+            }
+            
+            const isDuplicate = workspaces.some(ws => 
+                ws.name.toLowerCase() === name.trim().toLowerCase()
+            );
+            
+            if (isDuplicate) {
+                alert('Workspace with this name already exists!');
+                return;
+            }
+            
+            const workspace = {
+                id: Date.now(),
+                name: name.trim(),
+                description: description.trim(),
+                tasks: [],
+                createdAt: new Date().toISOString()
+            };
+            
+            workspaces.push(workspace);
+            saveToLocalStorage();
+            renderWorkspaces();
+            selectWorkspace(workspace.id);
+            closeWorkspaceModal();
+        };
+
         function deleteWorkspace(id, event) {
-            // stopPropagation() = mencegah event bubble ke parent
-            // Kenapa? Agar saat klik delete, tidak trigger onClick parent
             event.stopPropagation();
             
-            // confirm() = menampilkan dialog konfirmasi
-            if (confirm('Are you sure you want to delete this workspace?')) {
-                // filter() = membuat array baru dengan filter tertentu
-                // Hasilnya: array baru tanpa workspace dengan id yang dihapus
-                workspaces = workspaces.filter(w => w.id !== id);
-                
-                saveToLocalStorage();
-                renderWorkspaces();
-                
-                // Jika workspace yang dihapus sedang aktif
-                if (currentWorkspaceId === id) {
-                    currentWorkspaceId = null;
+            const workspace = workspaces.find(w => w.id === id);
+            
+            if (!workspace) return;
+            
+            const taskCount = workspace.tasks.length;
+            
+            showConfirmModal({
+                title: 'Delete Workspace?',
+                message: 'Are you sure you want to delete this workspace?',
+                itemName: workspace.name,
+                warning: taskCount > 0 
+                    ? `This workspace contains ${taskCount} task${taskCount > 1 ? 's' : ''}. All tasks will be permanently deleted.`
+                    : 'This action cannot be undone.',
+                onConfirm: () => {
+                    workspaces = workspaces.filter(w => w.id !== id);
+                    saveToLocalStorage();
+                    renderWorkspaces();
                     
-                    // Pilih workspace pertama jika masih ada
-                    if (workspaces.length > 0) {
-                        selectWorkspace(workspaces[0].id);
-                    } else {
-                        renderTasks();
+                    if (currentWorkspaceId === id) {
+                        currentWorkspaceId = null;
+                        
+                        if (workspaces.length > 0) {
+                            selectWorkspace(workspaces[0].id);
+                        } else {
+                            renderTasks();
+                        }
                     }
+                    
+                    console.log(`Workspace "${workspace.name}" deleted successfully`);
                 }
-            }
+            });
         }
 
         function selectWorkspace(id) {
@@ -307,12 +195,10 @@
             renderWorkspaces();
             renderTasks();
             
-            // Reset filter dan search
             document.getElementById('searchInput').value = '';
             document.getElementById('filterStatus').value = '';
             document.getElementById('filterOwner').value = '';
             
-            // Auto close sidebar di mobile setelah pilih workspace
             if (window.innerWidth <= 480 && sidebarVisible) {
                 toggleSidebar();
             }
@@ -320,49 +206,219 @@
 
         function renderWorkspaces() {
             const list = document.getElementById('workspaceList');
-            list.innerHTML = ''; // Kosongkan list
+            list.innerHTML = '';
             
-            // forEach() = loop untuk setiap element dalam array
             workspaces.forEach(ws => {
-                const li = document.createElement('li'); // Buat element <li>
+                const li = document.createElement('li');
                 li.className = 'workspace-item' + (ws.id === currentWorkspaceId ? ' active' : '');
-                
-                // onclick = event handler saat element diklik
                 li.onclick = () => selectWorkspace(ws.id);
-                
-                // innerHTML = set konten HTML di dalam element
-                // Template literal (backtick) untuk multi-line string
                 li.innerHTML = `
                     <span>${ws.name}</span>
                     <span class="delete-ws" onclick="deleteWorkspace(${ws.id}, event)">×</span>
                 `;
-                
-                // appendChild() = menambahkan child element
                 list.appendChild(li);
             });
         }
 
-        /* ============================================
-           TASK FUNCTIONS
-           ============================================ */
-        
+        function startClock() {
+            updateClock();
+            clockInterval = setInterval(updateClock, 1000);
+        }
+
+        function startDueDateChecker() {
+            checkAndUpdateOverdueTasks();
+            dueDateCheckInterval = setInterval(checkAndUpdateOverdueTasks, 60000);
+            scheduleMidnightCheck();
+        }
+
+        function checkAndUpdateOverdueTasks() {
+            if (currentWorkspaceId) {
+                const now = new Date();
+                const hours = now.getHours();
+                const minutes = now.getMinutes();
+                
+                if (hours === 0 && minutes === 0) {
+                    console.log('Midnight - updating task statuses...');
+                    renderTasks();
+                }
+            }
+        }
+
+        function scheduleMidnightCheck() {
+            const now = new Date();
+            const midnight = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                now.getDate() + 1,
+                0, 0, 0
+            );
+            
+            const timeUntilMidnight = midnight - now;
+            
+            setTimeout(() => {
+                console.log('Midnight check - refreshing tasks...');
+                renderTasks();
+                scheduleMidnightCheck();
+            }, timeUntilMidnight);
+        }
+
+        function stopDueDateChecker() {
+            if (dueDateCheckInterval) {
+                clearInterval(dueDateCheckInterval);
+                dueDateCheckInterval = null;
+            }
+        }
+
+        function updateClock() {
+            const now = new Date();
+            
+            let hours = now.getHours();
+            let minutes = now.getMinutes();
+            let seconds = now.getSeconds();
+            
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours || 12;
+            
+            hours = hours.toString().padStart(2, '0');
+            minutes = minutes.toString().padStart(2, '0');
+            seconds = seconds.toString().padStart(2, '0');
+            
+            const timeString = `${hours}:${minutes}:${seconds} ${ampm}`;
+            
+            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const months = [
+                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+            ];
+            
+            const dayName = days[now.getDay()];
+            const day = now.getDate();
+            const monthName = months[now.getMonth()];
+            const year = now.getFullYear();
+            
+            const dateString = `${dayName}, ${day} ${monthName} ${year}`;
+            
+            const timeElement = document.getElementById('currentTime');
+            if (timeElement) {
+                timeElement.textContent = timeString;
+            }
+            
+            const dateElement = document.getElementById('currentDate');
+            if (dateElement) {
+                dateElement.textContent = dateString;
+            }
+        }
+
+        function stopClock() {
+            if (clockInterval) {
+                clearInterval(clockInterval);
+                clockInterval = null;
+            }
+        }
+
+        function getDueDateStatus(dueDate, isCompleted = false) {
+            if (isCompleted) {
+                return {
+                    status: 'completed',
+                    label: 'Completed',
+                    class: 'due-status-future',
+                    icon: '✓',
+                    overdue: false
+                };
+            }
+            
+            const due = new Date(dueDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            due.setHours(0, 0, 0, 0);
+            
+            const diffTime = due - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) {
+                const daysLate = Math.abs(diffDays);
+                return {
+                    status: 'overdue',
+                    label: `${daysLate} day${daysLate > 1 ? 's' : ''} overdue`,
+                    class: 'due-status-overdue',
+                    icon: '⚠️',
+                    overdue: true,
+                    daysLate: daysLate
+                };
+            }
+            
+            if (diffDays === 0) {
+                return {
+                    status: 'today',
+                    label: 'Due today',
+                    class: 'due-status-today',
+                    icon: '📅',
+                    overdue: false
+                };
+            }
+            
+            if (diffDays <= 3) {
+                return {
+                    status: 'soon',
+                    label: `${diffDays} day${diffDays > 1 ? 's' : ''} left`,
+                    class: 'due-status-soon',
+                    icon: '⏰',
+                    overdue: false,
+                    daysLeft: diffDays
+                };
+            }
+            
+            return {
+                status: 'future',
+                label: `${diffDays} days left`,
+                class: 'due-status-future',
+                icon: '📆',
+                overdue: false,
+                daysLeft: diffDays
+            };
+        }
+
+        function formatDueDateDisplay(dateStr) {
+            const date = new Date(dateStr);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const due = new Date(dateStr);
+            due.setHours(0, 0, 0, 0);
+            
+            if (due.getTime() === today.getTime()) {
+                return 'Today';
+            }
+            
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            if (due.getTime() === tomorrow.getTime()) {
+                return 'Tomorrow';
+            }
+            
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            if (due.getTime() === yesterday.getTime()) {
+                return 'Yesterday';
+            }
+            
+            return formatDate(dateStr);
+        }
+
         function openTaskModal(taskId = null) {
             const modal = document.getElementById('taskModal');
             const title = document.getElementById('modalTitle');
             const form = document.getElementById('taskForm');
             
-            form.reset(); // Reset form (kosongkan semua input)
+            form.reset();
             editingTaskId = taskId;
             
-            // Jika ada taskId, berarti mode edit
             if (taskId) {
                 title.textContent = 'Edit Task';
-                
-                // find() = mencari element pertama yang match kondisi
                 const workspace = workspaces.find(w => w.id === currentWorkspaceId);
                 const task = workspace.tasks.find(t => t.id === taskId);
                 
-                // Isi form dengan data task yang diedit
                 document.getElementById('taskName').value = task.name;
                 document.getElementById('taskOwner').value = task.owner;
                 document.getElementById('taskStatus').value = task.status;
@@ -373,29 +429,22 @@
                 title.textContent = 'Add New Task';
             }
             
-            // classList.add() = menambahkan class ke element
             modal.classList.add('active');
         }
 
         function closeTaskModal() {
-            // classList.remove() = menghapus class dari element
             document.getElementById('taskModal').classList.remove('active');
             editingTaskId = null;
         }
 
-        // Event handler untuk form submit
-        // onsubmit dipanggil saat form di-submit
         document.getElementById('taskForm').onsubmit = function(e) {
-            // preventDefault() = mencegah default behavior
-            // Kenapa? Agar form tidak reload page
             e.preventDefault();
             
             if (!currentWorkspaceId) {
                 alert('Please select a workspace first');
-                return; // Keluar dari fungsi
+                return;
             }
             
-            // Buat object task dengan data dari form
             const task = {
                 id: editingTaskId || Date.now(),
                 name: document.getElementById('taskName').value,
@@ -409,12 +458,9 @@
             const workspace = workspaces.find(w => w.id === currentWorkspaceId);
             
             if (editingTaskId) {
-                // Mode edit: update task yang ada
-                // findIndex() = mencari index element yang match
                 const index = workspace.tasks.findIndex(t => t.id === editingTaskId);
-                workspace.tasks[index] = task; // Replace dengan data baru
+                workspace.tasks[index] = task;
             } else {
-                // Mode add: tambah task baru
                 workspace.tasks.push(task);
             }
             
@@ -425,13 +471,24 @@
         };
 
         function deleteTask(taskId) {
-            if (confirm('Are you sure you want to delete this task?')) {
-                const workspace = workspaces.find(w => w.id === currentWorkspaceId);
-                workspace.tasks = workspace.tasks.filter(t => t.id !== taskId);
-                
-                saveToLocalStorage();
-                renderTasks();
-            }
+            const workspace = workspaces.find(w => w.id === currentWorkspaceId);
+            const task = workspace.tasks.find(t => t.id === taskId);
+            
+            if (!task) return;
+            
+            showConfirmModal({
+                title: 'Delete Task?',
+                message: 'Are you sure you want to delete this task?',
+                itemName: task.name,
+                warning: 'This action cannot be undone.',
+                onConfirm: () => {
+                    workspace.tasks = workspace.tasks.filter(t => t.id !== taskId);
+                    saveToLocalStorage();
+                    renderTasks();
+                    
+                    console.log(`Task "${task.name}" deleted successfully`);
+                }
+            });
         }
 
         function renderTasks() {
@@ -445,33 +502,55 @@
             const workspace = workspaces.find(w => w.id === currentWorkspaceId);
             document.getElementById('currentWorkspaceName').textContent = workspace.name;
 
-            // Get filter values
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const statusFilter = document.getElementById('filterStatus').value;
             const ownerFilter = document.getElementById('filterOwner').value;
 
-            // Filter tasks
-            // Kombinasi multiple kondisi dengan AND (&&)
             let filteredTasks = workspace.tasks.filter(task => {
-                // includes() = cek apakah string mengandung substring
                 const matchesSearch = task.name.toLowerCase().includes(searchTerm) || 
                                     task.owner.toLowerCase().includes(searchTerm) ||
                                     task.notes.toLowerCase().includes(searchTerm);
-                
-                // Operator || (OR) = true jika salah satu true
-                // ! (NOT) = membalik boolean
                 const matchesStatus = !statusFilter || task.status === statusFilter;
                 const matchesOwner = !ownerFilter || task.owner === ownerFilter;
-                
                 return matchesSearch && matchesStatus && matchesOwner;
             });
 
-            // Pisahkan active dan completed tasks
             const activeTasks = filteredTasks.filter(t => t.status !== 'Complete');
             const completedTasks = filteredTasks.filter(t => t.status === 'Complete');
 
-            // Update counter badge
-            document.getElementById('activeCount').textContent = activeTasks.length;
+            activeTasks.sort((a, b) => {
+                const statusA = getDueDateStatus(a.dueDate, false);
+                const statusB = getDueDateStatus(b.dueDate, false);
+                
+                const priorityOrder = {
+                    'overdue': 1,
+                    'today': 2,
+                    'soon': 3,
+                    'future': 4
+                };
+                
+                const priorityA = priorityOrder[statusA.status] || 5;
+                const priorityB = priorityOrder[statusB.status] || 5;
+                
+                if (priorityA !== priorityB) {
+                    return priorityA - priorityB;
+                }
+                
+                return new Date(a.dueDate) - new Date(b.dueDate);
+            });
+
+            const overdueCount = activeTasks.filter(task => {
+                const status = getDueDateStatus(task.dueDate, false);
+                return status.overdue;
+            }).length;
+
+            const activeCountEl = document.getElementById('activeCount');
+            activeCountEl.textContent = activeTasks.length;
+            
+            if (overdueCount > 0) {
+                activeCountEl.innerHTML = `${activeTasks.length} <span style="color: #c30; margin-left: 5px;">(${overdueCount} overdue)</span>`;
+            }
+            
             document.getElementById('completedCount').textContent = completedTasks.length;
 
             renderTaskList('activeTasksBody', activeTasks, true);
@@ -487,18 +566,34 @@
                 return;
             }
 
-            // Loop setiap task dan buat row table
             tasks.forEach(task => {
                 const tr = document.createElement('tr');
                 
-                // Conditional rendering dengan ternary operator
-                // condition ? valueIfTrue : valueIfFalse
+                const isCompleted = task.status === 'Complete';
+                const dueStatus = getDueDateStatus(task.dueDate, isCompleted);
+                
+                if (dueStatus.overdue && !isCompleted) {
+                    tr.className = 'task-row-overdue';
+                }
+                
+                const dueDateDisplay = formatDueDateDisplay(task.dueDate);
+                
+                const dueDateHTML = `
+                    <div class="due-date-cell">
+                        <span class="due-date-text">${dueDateDisplay}</span>
+                        <span class="due-status ${dueStatus.class}">
+                            <span>${dueStatus.icon}</span>
+                            <span>${dueStatus.label}</span>
+                        </span>
+                    </div>
+                `;
+                
                 tr.innerHTML = `
                     <td class="task-name">${task.name}</td>
                     <td>${task.owner}</td>
                     ${showStatus ? `<td><span class="status-badge status-${task.status.toLowerCase().replace(' ', '')}">${task.status}</span></td>` : ''}
                     <td><span class="priority-badge priority-${task.priority.toLowerCase()}">${task.priority}</span></td>
-                    <td>${formatDate(task.dueDate)}</td>
+                    <td>${dueDateHTML}</td>
                     <td>${task.notes || '-'}</td>
                     <td>
                         <div class="action-buttons">
@@ -512,17 +607,14 @@
         }
 
         function filterTasks() {
-            renderTasks(); // Re-render dengan filter baru
+            renderTasks();
         }
 
         function updateOwnerFilter() {
             const select = document.getElementById('filterOwner');
             const currentValue = select.value;
-            
-            // Set() = collection yang hanya menyimpan unique values
             const owners = new Set();
 
-            // Kumpulkan semua owner dari semua workspace
             workspaces.forEach(ws => {
                 ws.tasks.forEach(task => {
                     if (task.owner) owners.add(task.owner);
@@ -530,9 +622,6 @@
             });
 
             select.innerHTML = '<option value="">All Owners</option>';
-            
-            // Array.from() = convert Set ke Array
-            // sort() = mengurutkan array
             Array.from(owners).sort().forEach(owner => {
                 const option = document.createElement('option');
                 option.value = owner;
@@ -540,38 +629,46 @@
                 select.appendChild(option);
             });
 
-            select.value = currentValue; // Restore selected value
+            select.value = currentValue;
         }
 
-        // Fungsi helper untuk format tanggal
         function formatDate(dateStr) {
             const date = new Date(dateStr);
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
-            // toLocaleDateString() = format tanggal sesuai locale
             return date.toLocaleDateString('id-ID', options);
         }
 
-        /* ============================================
-           EVENT LISTENERS
-           ============================================ */
-        
-        // Close modal saat klik di luar modal content
         document.getElementById('taskModal').onclick = function(e) {
-            // e.target = element yang diklik
-            // this = element yang memiliki event listener (modal)
             if (e.target === this) {
                 closeTaskModal();
             }
         };
 
-        // Cleanup saat page akan di-unload (optional, good practice)
-        // Mencegah memory leak dari interval yang masih running
-        window.addEventListener('beforeunload', function() {
-            stopClock(); // Stop clock interval
+        document.getElementById('workspaceModal').onclick = function(e) {
+            if (e.target === this) {
+                closeWorkspaceModal();
+            }
+        };
+
+        document.getElementById('confirmModal').onclick = function(e) {
+            if (e.target === this) {
+                closeConfirmModal();
+            }
+        };
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeTaskModal();
+                closeWorkspaceModal();
+                closeConfirmModal();
+            }
         });
 
-        // Jalankan init() saat DOM sudah siap
-        // Kenapa tidak langsung? Agar semua element HTML sudah ter-load
+        window.addEventListener('beforeunload', function() {
+            stopClock();
+            stopDueDateChecker();
+        });
+
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', init);
         } else {

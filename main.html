@@ -3,33 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>To-Do List Manager</title>
+    <title>To-Do List Manager - Full Version with Custom Confirmation</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <!-- Overlay untuk mobile -->
         <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
-        <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
-            <!-- Tombol Toggle Sidebar -->
             <button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebarToggle">
                 <span id="toggleIcon">◀</span>
             </button>
 
             <div class="sidebar-header">
-                <h2> My Workspaces</h2>
+                <h2>My Workspaces</h2>
             </div>
             <div class="sidebar-content">
                 <ul class="workspace-list" id="workspaceList"></ul>
-                <button class="add-workspace-btn" onclick="addWorkspace()">+ New Workspace</button>
+                <button class="add-workspace-btn" onclick="openWorkspaceModal()">+ New Workspace</button>
             </div>
         </div>
 
-        <!-- Main Content -->
         <div class="main-content">
-            <!-- Header -->
             <div class="header">
                 <div class="header-left">
                     <div class="search-box">
@@ -50,17 +45,15 @@
                     </div>
                 </div>
                 
-                <!-- Header Right: Clock + User Profile -->
                 <div class="header-right">
-                    <!-- Realtime Clock (Standalone) -->
                     <div class="clock-container">
+                        <span class="clock-icon">🕐</span>
                         <div>
                             <div class="clock-time" id="currentTime">00:00:00</div>
                             <div class="clock-date" id="currentDate">Loading...</div>
                         </div>
                     </div>
                     
-                    <!-- User Profile -->
                     <div class="user-profile">
                         <div class="user-avatar" id="userAvatar">U</div>
                         <div class="user-info">
@@ -70,14 +63,12 @@
                 </div>
             </div>
 
-            <!-- Dashboard -->
             <div class="dashboard" id="dashboard">
                 <div class="workspace-title">
                     <span id="currentWorkspaceName">Select a workspace</span>
                     <button class="add-task-btn" onclick="openTaskModal()">+ New Task</button>
                 </div>
 
-                <!-- Active Tasks Section -->
                 <div class="section">
                     <div class="section-header">
                         <h3 class="section-title">🎯 Active Tasks</h3>
@@ -85,7 +76,7 @@
                     </div>
                     <div class="table-wrapper">
                         <table class="task-table">
-                            <thead class="table-header">
+                            <thead>
                                 <tr>
                                     <th>Task</th>
                                     <th>Owner</th>
@@ -101,7 +92,6 @@
                     </div>
                 </div>
 
-                <!-- Completed Tasks Section -->
                 <div class="section">
                     <div class="section-header">
                         <h3 class="section-title">✅ Completed Tasks</h3>
@@ -127,7 +117,6 @@
         </div>
     </div>
 
-    <!-- Task Modal -->
     <div class="modal" id="taskModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -177,6 +166,65 @@
                     <button type="submit" class="btn btn-primary">Save Task</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div class="modal" id="workspaceModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Workspace</h3>
+                <button class="close-modal" onclick="closeWorkspaceModal()">&times;</button>
+            </div>
+            <form id="workspaceForm">
+                <div class="form-group">
+                    <label class="form-label">Workspace Name</label>
+                    <input 
+                        type="text" 
+                        class="form-input" 
+                        id="workspaceName" 
+                        placeholder="e.g., Personal Projects, Work Tasks"
+                        required
+                        minlength="3"
+                        maxlength="50"
+                    >
+                    <small style="color: #7f8c8d; font-size: 12px; margin-top: 5px; display: block;">
+                        Enter a descriptive name for your workspace (3-50 characters)
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description (Optional)</label>
+                    <textarea 
+                        class="form-textarea" 
+                        id="workspaceDescription"
+                        placeholder="Brief description of this workspace..."
+                        maxlength="200"
+                    ></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeWorkspaceModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Workspace</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="confirm-modal" id="confirmModal">
+        <div class="confirm-content">
+            <div class="confirm-icon warning">
+                <span id="confirmIcon">⚠️</span>
+            </div>
+            <h3 class="confirm-title" id="confirmTitle">Confirm Delete</h3>
+            <div class="confirm-message">
+                <p id="confirmMessage">Are you sure you want to delete this item?</p>
+                <div class="confirm-item-name" id="confirmItemName"></div>
+                <p style="margin-top: 10px; color: #e53e3e; font-size: 13px;" id="confirmWarning">
+                    This action cannot be undone.
+                </p>
+            </div>
+            <div class="confirm-actions">
+                <button class="btn-cancel" onclick="closeConfirmModal()">Cancel</button>
+                <button class="btn-danger" id="confirmDeleteBtn">Delete</button>
+            </div>
         </div>
     </div>
 
